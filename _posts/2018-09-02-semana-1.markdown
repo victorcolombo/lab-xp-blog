@@ -1,0 +1,38 @@
+---
+layout: post
+title:  "Semana 1 - Problemas com MacOS"
+date:   2018-09-02 01:55:04 -0300
+categories: sprint
+---
+
+Na primeira semana focamos em realizar o setup dos computadores para o desenvolvimento. Como eu utilizo um Macbook rodando MacOS como minha principal máquina, não consegui reproduzir o mesmo *workflow* dos demais, que utilizavam distros Linux.
+
+Nesse post vou relatar alguns dos problemas e soluções que encontrei ou estou considerando.
+
+## Kworkflow é Linux-specific
+
+Os scripts fornecidos pelo [Kworkflow](https://github.com/rodrigosiqueira/kworkflow) são Linux-specific, pois fazem uso de uma série de comandos específicos do Linux, como `nproc` e `guestmount`. Talvez seja necessário portar ou reescrever tais scripts para o ambiente do MacOS.
+
+## Case-sensitive vs Case-insensitive
+
+O primeiro problema inesperado foi o fato de que o MacOS, diferentemente do Linux, é **Case-insensitive**. Encontrei diversas instâncias no Kernel onde arquivos diferenciavam em nome apenas por letras maiúsculas, como `include/uapi/linux/netfilter/xt_CONNMARK.h` e `include/uapi/linux/netfilter/xt_connmark.h`. Isso faz com que o Git sobrescreva tais arquivos.
+
+A solução para esse problema seria a criação de uma partição do APFS que é Case-sensitive, como descrito [aqui](https://academy.spryker.com/enablement/tutorials_and_howtos/howtos/ht_case_sensitive_file_system_mac.html).
+
+## Problemas com a compilação do Kernel
+
+Compilar o Kernel no MacOS não parece ser uma tarefa viável. Isto é pouco documentado para Kernels fora do círculo do Android.
+
+Após diversas tentativas, cheguei a conclusão que instalar/portar todas as bibliotecas ausentes como `/usr/include/elf.h` e `asm/types.h` para a compilação não seria possível. Assim, considerei as seguintes alternativas:
+
+# Compilar num container
+
+Embora exista uma [Docker image](https://github.com/moul/docker-kernel-builder) para esta tarefa, vi que outras pessoas tentaram esse caminho e não foram [bem](https://unrouted.io/2016/08/09/docker-osx-linux-kernel-building/) [sucedidadas](https://unrouted.io/2016/08/10/docker-osx-linux-kernel-building-2/).
+
+# Compilar numa QEMU VM
+
+Como já havia realizado a instalação do Arch no QEMU, parecia uma saida sensata. Para minha tristeza, porém, descobri que KVM é uma API específica do Linux. Embora MacOS ofereça outras APIs de aceleração, nenhuma está implementada no QEMU. Sem aceleração, QEMU é muito lento e demorou dezenas de horas para realizar uma compilação.
+
+# Compilar numa outra VM
+
+Atualmente estou testando uma VM em VirtualBox, com aceleração e shared folder. Tomara que dê certo...
